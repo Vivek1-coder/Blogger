@@ -11,74 +11,73 @@ export default function PostForm({post}) {
     const {register, handleSubmit, watch, setValue, control, getValues} = useForm({
         defaultValues: {
             title : post?.title || '',
-            slug : post ?.$id || '',
-            content : post ?.content || '',
-            status : post ?.status || 'active',
+            slug : post?.$id || '',
+            content : post?.content || '',
+            status : post?.status || 'active',
 
         },
     });
 
     const navigate = useNavigate()
-    const userData = useSelector((state) => state.auth.userData)
+    const userData = useSelector((state) => state.auth.userData);
     
-    const submit = async(data) => {
-      if(post){
-        const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]): null;
-
-        if(file){
-          appwriteService.deleteFile(post.featuredImage)
-        }
-
-        const dbPost = await appwriteService.updatePost(post.$id,{
-          ...data,
-          featuredImage:file ? file.$id : undefined
-        });
-
-        if(dbPost){
-          navigate(`/post/${dbPost.$id}`)
-        }
-      }
-
-      else{
-        //TODO: check functionality that if file present
-        const file = await appwriteService.uploadFile(data.image[0]);
-        if(file){
-          const fileId = file.$id
-          data.featuredImage = fileId
-          const dbPost = await appwriteService.createPost({
-            ...data,
-            userId : userData.$id,
-          })
-          if(dbPost){
-            navigate(`/post/${dbPost.$id}`)
+    const submit = async (data) => {
+      try {
+          let fileId = null;
+  
+          // Check if an image file is uploaded
+          if (data.image && data.image[0]) {
+              const file = await appwriteService.uploadFile(data.image[0]);
+              fileId = file ? file.$id : null;
           }
-
-        }
+  
+          if (post) {
+              // Update existing post
+              const updatedData = {
+                  ...data,
+                  featuredimage: fileId || post.featuredimage || "", // Ensure featuredimage has a valid value
+              };
+  
+              const dbPost = await appwriteService.updatePost(post.$id, updatedData);
+              if (dbPost) navigate(`/post/${dbPost.$id}`);
+          } else {
+              // Create new post
+              const newData = {
+                  ...data,
+                  userid: userData.$id,
+                  featuredimage: fileId || "", // Set default value for featuredimage if no file uploaded
+              };
+  
+              const dbPost = await appwriteService.createPost(newData);
+              if (dbPost) navigate(`/post/${dbPost.$id}`);
+          }
+      } catch (error) {
+          console.error("Appwrite service :: createPost :: error", error);
       }
-    }
+  };
+  
 
 
   const slugTransform = useCallback((value) => {
-      if(value && typeof value === 'string'){
-        return value.trim()
-        .toLowerCase()
-        .replace(/^[a-zA-Z\d\s]+/g, '-')
-        .replace(/\s/g,'-')
+      if(value && typeof value === 'string')
+        return value
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-zA-Z\d\s]+/g, "-")
+                .replace(/\s/g, "-");
 
-      }
-      return '';
-  },[])
+      
+      return "";
+  },[]);
 
   React.useEffect(() => {
-    const subscription = watch((value, {name}) => {
+    const subscription = watch((value, { name }) => {
       if(name === 'title'){
-        setValue('slug',slugTransform(value.title),{shouldValidate : true});
+        setValue("slug",slugTransform(value.title),{shouldValidate : true});
       }
     });
 
-    return () =>{
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe();
   },[watch, slugTransform, setValue])
   
   return (
@@ -112,7 +111,7 @@ export default function PostForm({post}) {
                 {post && (
                     <div className="w-full mb-4">
                         <img
-                            src={appwriteService.getFilePreview(post.featuredImage)}
+                            src={appwriteService.getFilePreview(post.featuredimage)}
                             alt={post.title}
                             className="rounded-lg"
                         />

@@ -24,7 +24,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import { Protected, Login } from './components/index.js'
 
-
+import Post from "./pages/Post";
 import AddPost from "./pages/AddPost";
 import Signup from './pages/Signup'
 // import Login from './pages/Login.jsx'
@@ -87,10 +87,10 @@ const router = createBrowserRouter([
                 </Protected>
             ),
         },
-        // {
-        //     path: "/post/:slug",
-        //     element: <Post />,
-        // },
+        {
+            path: "/post/:slug",
+            element: <Post />,
+        },
     ],
 },
 ])
